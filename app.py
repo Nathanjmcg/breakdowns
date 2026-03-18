@@ -190,6 +190,60 @@ html, body, [class*="css"] {{
     margin: 0 0 10px 0; color: {K_GREEN}; font-weight: 800;
     font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.6px;
 }}
+
+/* ── Progress bar ── */
+.wo-progress-wrap {{
+    margin-top: 8px;
+    display: flex; align-items: center; gap: 8px;
+}}
+.wo-progress-track {{
+    flex: 1; height: 7px; background: #e8e8e8;
+    border-radius: 4px; overflow: hidden;
+}}
+.wo-progress-fill {{
+    height: 100%; border-radius: 4px;
+    transition: width 0.3s ease;
+}}
+.wo-progress-label {{
+    font-size: 0.68rem; font-weight: 700;
+    min-width: 32px; text-align: right;
+}}
+
+/* ── Repeat-visit tracker ── */
+.tracker-section {{ margin-top: 1.5rem; }}
+.tracker-header {{
+    font-size: 0.72rem; font-weight: 700; color: {K_GREY};
+    text-transform: uppercase; letter-spacing: 0.5px;
+    opacity: 0.55; margin-bottom: 8px;
+}}
+.tracker-card {{
+    background: {K_WHITE}; border: 1px solid {K_LGREY};
+    border-top: 3px solid {K_GREEN}; border-radius: 6px;
+    padding: 10px 14px; margin-bottom: 8px;
+}}
+.tracker-card h5 {{
+    margin: 0 0 8px 0; font-size: 0.78rem; font-weight: 800;
+    color: {K_GREEN}; text-transform: uppercase; letter-spacing: 0.4px;
+}}
+.tracker-row {{
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 8px; border-radius: 5px; margin-bottom: 3px;
+    font-size: 0.8rem;
+}}
+.tracker-row.warn-amber {{
+    background: #fff8e1; color: #7a5c00;
+    border-left: 3px solid #f0c940;
+}}
+.tracker-row.warn-red {{
+    background: #fdecea; color: #7b1a1a;
+    border-left: 3px solid #e53935;
+}}
+.tracker-row .tr-name {{ font-weight: 700; }}
+.tracker-row .tr-count {{
+    font-weight: 800; font-size: 0.78rem;
+    background: rgba(0,0,0,0.08); border-radius: 10px;
+    padding: 1px 8px;
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -308,11 +362,56 @@ def wo_done_steps(wo):
         done.append(CHECKLIST_LABELS["complete"])
     return done
 
+def wo_progress(wo):
+    """Return (pct, colour_hex, label) for the WO checklist progress."""
+    # Max possible steps depends on whether chargeable
+    steps = ['logged_responded', 'eta_advised', 'wo_allocated', 'attended']
+    if wo.get('chargeable'):
+        steps += ['charges_processed', 'invoiced']
+    steps.append('complete')
+    total   = len(steps)
+    done    = sum(1 for s in steps if wo.get(s))
+    pct     = int(done / total * 100) if total > 0 else 0
+
+    # Red → yellow → green via HSL interpolation
+    # 0% = hsl(0,85%,48%)  red
+    # 50% = hsl(45,95%,45%) amber/yellow
+    # 100% = hsl(134,80%,32%) green
+    if pct <= 50:
+        h = int(pct / 50 * 45)          # 0 → 45
+        s = 85 + int(pct / 50 * 10)     # 85 → 95
+        l = 48 - int(pct / 50 * 3)      # 48 → 45
+    else:
+        ratio = (pct - 50) / 50
+        h = int(45 + ratio * 89)        # 45 → 134
+        s = int(95 - ratio * 15)        # 95 → 80
+        l = int(45 - ratio * 13)        # 45 → 32
+    colour = f"hsl({h},{s}%,{l}%)"
+    return pct, colour, f"{done}/{total}"
+
+
 def get_month_all_wos(year, month):
     result = []
     for d in range(1, calendar.monthrange(year, month)[1] + 1):
         result.extend(st.session_state.data.get(f"{year}-{month:02d}-{d:02d}", []))
     return result
+
+def repeat_visit_tracker():
+    """Return dicts of {name: count} for units, postcodes, customers across ALL data."""
+    units, postcodes, customers = Counter(), Counter(), Counter()
+    for wos in st.session_state.data.values():
+        for wo in wos:
+            u = (wo.get('unit_number') or '').strip().upper()
+            p = (wo.get('postcode') or '').strip().upper()
+            c = (wo.get('customer') or '').strip()
+            if u:
+                units[u] += 1
+            if p:
+                postcodes[p] += 1
+            if c:
+                customers[c] += 1
+    return units, postcodes, customers
+
 
 def week_summary_bar(year, month, week_days):
     """Return HTML for the green wk-bar above a week row."""
@@ -378,6 +477,7 @@ def day_view_dialog(day_str):
     else:
         for wo in wos:
             done = wo_done_steps(wo)
+            pct, prog_colour, prog_label = wo_progress(wo)
             pill_keys = ["logged_responded","eta_advised","wo_allocated","attended","chargeable"]
             if wo.get("chargeable"):
                 pill_keys += ["charges_processed","invoiced"]
@@ -394,6 +494,14 @@ def day_view_dialog(day_str):
                     f'<span class="ks-pill-charge">'
                     f'£{float(wo.get("amount_invoiced",0)):,.2f} Ex VAT</span>'
                 )
+            progress_html = (
+                f'<div class="wo-progress-wrap">'
+                f'<div class="wo-progress-track">'
+                f'<div class="wo-progress-fill" style="width:{pct}%;background:{prog_colour};"></div>'
+                f'</div>'
+                f'<span class="wo-progress-label" style="color:{prog_colour};">{pct}%</span>'
+                f'</div>'
+            )
 
             rc1, rc2, rc3 = st.columns([5, 1, 1])
             with rc1:
@@ -408,6 +516,7 @@ def day_view_dialog(day_str):
                     f'{wo.get("category","—")}'
                     f'</div>'
                     f'{pills}{charge_badge}'
+                    f'{progress_html}'
                     f'</div>',
                     unsafe_allow_html=True
                 )
@@ -741,3 +850,71 @@ for row_start in range(0, len(cal_cells), 7):
                         st.session_state.modal_edit_id = None
                     st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# REPEAT VISIT TRACKER
+# ══════════════════════════════════════════════════════════════════════════════
+st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
+st.markdown(
+    f"<div style='border-top:2px solid {K_GREEN};margin-bottom:1rem;'></div>",
+    unsafe_allow_html=True
+)
+st.markdown(
+    f"<div style='font-size:1rem;font-weight:800;color:{K_GREEN};"
+    f"letter-spacing:-0.2px;margin-bottom:4px;'>🔁 Repeat Visit Tracker</div>"
+    f"<div style='font-size:0.75rem;color:{K_GREY};opacity:0.6;margin-bottom:1rem;'>"
+    f"Across all recorded data — flags units attended more than once, "
+    f"postcodes visited more than once, and customers visited more than 3 times.</div>",
+    unsafe_allow_html=True
+)
+
+units_ctr, postcodes_ctr, customers_ctr = repeat_visit_tracker()
+
+# Filter by thresholds
+repeat_units     = {k: v for k, v in units_ctr.items()     if v > 1}
+repeat_postcodes = {k: v for k, v in postcodes_ctr.items() if v > 1}
+repeat_customers = {k: v for k, v in customers_ctr.items() if v > 3}
+
+def tracker_rows_html(items, amber_threshold, red_threshold):
+    """Render sorted rows with amber/red banding."""
+    if not items:
+        return f"<div style='font-size:0.78rem;color:{K_GREY};opacity:0.4;padding:6px 2px;font-style:italic;'>None to report</div>"
+    html = ""
+    for name, count in sorted(items.items(), key=lambda x: -x[1]):
+        cls = "warn-red" if count >= red_threshold else "warn-amber"
+        html += (
+            f'<div class="tracker-row {cls}">'
+            f'<span class="tr-name">{name}</span>'
+            f'<span class="tr-count">{count}×</span>'
+            f'</div>'
+        )
+    return html
+
+tc1, tc2, tc3 = st.columns(3)
+
+with tc1:
+    st.markdown(
+        f'<div class="tracker-card">'
+        f'<h5>⚙️ Unit Numbers — Attended &gt;1×</h5>'
+        f'{tracker_rows_html(repeat_units, 2, 4)}'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+
+with tc2:
+    st.markdown(
+        f'<div class="tracker-card">'
+        f'<h5>📍 Postcodes — Visited &gt;1×</h5>'
+        f'{tracker_rows_html(repeat_postcodes, 2, 4)}'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+
+with tc3:
+    st.markdown(
+        f'<div class="tracker-card">'
+        f'<h5>🏢 Customers — Visited &gt;3×</h5>'
+        f'{tracker_rows_html(repeat_customers, 4, 7)}'
+        f'</div>',
+        unsafe_allow_html=True
+    )
