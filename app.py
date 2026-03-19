@@ -5,6 +5,7 @@ import requests
 from collections import Counter
 from datetime import date, datetime, timedelta
 import calendar
+from streamlit_autorefresh import st_autorefresh
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -13,6 +14,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# Refresh every 30 seconds — keeps all users in sync
+st_autorefresh(interval=30_000, limit=0, key="breakdown_autorefresh")
 
 # ── Brand constants ────────────────────────────────────────────────────────────
 K_GREEN      = "#0d823b"
