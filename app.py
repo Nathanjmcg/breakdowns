@@ -575,7 +575,9 @@ def day_view_dialog(day_str):
                     f'{wo.get("customer","—")} &nbsp;·&nbsp; '
                     f'{wo.get("postcode","—")} &nbsp;·&nbsp; '
                     f'{wo.get("category","—")}'
-                    f'</div>'
+                    + (f' &nbsp;·&nbsp; 👤 {wo["site_contact"]}' if wo.get("site_contact") else "")
+                    + (f' &nbsp;·&nbsp; 📱 {wo["contact_mobile"]}' if wo.get("contact_mobile") else "")
+                    + f'</div>'
                     + (
                         f'<div style="font-size:11.5px;color:{K_GREY};'
                         f'background:rgba(0,0,0,0.04);border-radius:4px;'
@@ -646,11 +648,13 @@ def wo_modal(day_str, edit_id=None):
     st.markdown('<div class="ks-form-section"><h4>Work Order Details</h4>', unsafe_allow_html=True)
     fc1, fc2 = st.columns(2)
     with fc1:
-        wo_number   = st.text_input("WO Number *",  value=existing.get("wo_number", ""))
-        customer    = st.text_input("Customer *",    value=existing.get("customer", ""))
+        wo_number    = st.text_input("WO Number *",   value=existing.get("wo_number", ""))
+        customer     = st.text_input("Customer *",     value=existing.get("customer", ""))
+        site_contact = st.text_input("Site Contact",   value=existing.get("site_contact", ""))
     with fc2:
-        unit_number = st.text_input("Unit Number *", value=existing.get("unit_number", ""))
-        postcode    = st.text_input("Postcode",       value=existing.get("postcode", ""))
+        unit_number  = st.text_input("Unit Number *",  value=existing.get("unit_number", ""))
+        postcode     = st.text_input("Postcode",        value=existing.get("postcode", ""))
+        contact_mobile = st.text_input("Mobile",        value=existing.get("contact_mobile", ""), placeholder="e.g. 07700 900000")
     cat_idx  = CATEGORIES.index(existing["category"]) if existing.get("category") in CATEGORIES else 2
     category = st.selectbox("Issue Category *", CATEGORIES, index=cat_idx)
     issue_description = st.text_area(
@@ -773,6 +777,8 @@ def wo_modal(day_str, edit_id=None):
                     "unit_number":         unit_number,
                     "customer":            customer,
                     "postcode":            postcode,
+                    "site_contact":        site_contact,
+                    "contact_mobile":      contact_mobile,
                     "category":            category,
                     "issue_description":   issue_description,
                     "engineer":            engineer,
