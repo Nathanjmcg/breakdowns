@@ -37,7 +37,7 @@
       "logged_responded": true,
       "eta_advised": true,
       "wo_allocated": true,
-      "attended": false,
+      "attended": true,
       "chargeable": false,
       "charges_processed": false,
       "invoiced": false,
