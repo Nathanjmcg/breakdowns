@@ -414,10 +414,13 @@ def repeat_visit_tracker():
     units, postcodes, customers = Counter(), Counter(), Counter()
     for wos in st.session_state.data.values():
         for wo in wos:
-            u = (wo.get("unit_number") or "").strip().upper()
+            # Support both old single unit_number and new unit_numbers list
+            _unit_list = wo.get("unit_numbers") or ([wo["unit_number"]] if wo.get("unit_number") else [])
+            for u in _unit_list:
+                u = u.strip().upper()
+                if u: units[u] += 1
             p = (wo.get("postcode")    or "").strip().upper()
             c = (wo.get("customer")    or "").strip()
-            if u: units[u]     += 1
             if p: postcodes[p] += 1
             if c: customers[c] += 1
     return units, postcodes, customers
@@ -569,8 +572,9 @@ def day_view_dialog(day_str):
                 st.markdown(
                     f'<div class="dlg-wo-chip">'
                     f'<div class="dlg-wo-title">'
-                    f'WO {wo.get("wo_number","—")} &nbsp;·&nbsp; {wo.get("unit_number","—")}'
-                    f'</div>'
+                    + f'WO {wo.get("wo_number","—")} &nbsp;·&nbsp; '
+                    + " / ".join(wo.get("unit_numbers") or ([wo["unit_number"]] if wo.get("unit_number") else ["—"]))
+                    + f'</div>'
                     f'<div class="dlg-wo-meta">'
                     f'{wo.get("customer","—")} &nbsp;·&nbsp; '
                     f'{wo.get("postcode","—")} &nbsp;·&nbsp; '
@@ -652,9 +656,54 @@ def wo_modal(day_str, edit_id=None):
         customer     = st.text_input("Customer *",     value=existing.get("customer", ""))
         site_contact = st.text_input("Site Contact",   value=existing.get("site_contact", ""))
     with fc2:
-        unit_number  = st.text_input("Unit Number *",  value=existing.get("unit_number", ""))
         postcode     = st.text_input("Postcode",        value=existing.get("postcode", ""))
         contact_mobile = st.text_input("Mobile",        value=existing.get("contact_mobile", ""), placeholder="e.g. 07700 900000")
+
+    # ── Unit Numbers (multi, 4-5 digit validated) ──
+    # Seed session state from existing record
+    _units_key = f"unit_list_{existing.get('id','new')}"
+    if _units_key not in st.session_state:
+        _seed = existing.get("unit_numbers") or (
+            [existing["unit_number"]] if existing.get("unit_number") else [""]
+        )
+        st.session_state[_units_key] = list(_seed)
+
+    st.markdown(
+        f"<div style='font-size:0.78rem;font-weight:700;color:{K_GREY};margin-bottom:4px;'>"
+        f"Unit Number(s) <span style='font-weight:400;opacity:.55;font-size:0.72rem;'>"
+        f"4–5 digit numbers only</span></div>",
+        unsafe_allow_html=True
+    )
+    _unit_errors = []
+    _to_remove   = None
+    for _ui, _uval in enumerate(st.session_state[_units_key]):
+        _uc1, _uc2 = st.columns([5, 1])
+        with _uc1:
+            _new_val = st.text_input(
+                f"Unit {_ui+1}" if len(st.session_state[_units_key]) > 1 else "Unit Number *",
+                value=_uval,
+                key=f"unit_inp_{_units_key}_{_ui}",
+                placeholder="e.g. 12345",
+                label_visibility="collapsed" if _ui > 0 else "visible",
+            )
+            st.session_state[_units_key][_ui] = _new_val.strip()
+            if _new_val.strip() and not _new_val.strip().isdigit():
+                _unit_errors.append(f"Unit {_ui+1}: numbers only.")
+            elif _new_val.strip() and not (4 <= len(_new_val.strip()) <= 5):
+                _unit_errors.append(f"Unit {_ui+1}: must be 4 or 5 digits.")
+        with _uc2:
+            if _ui > 0:
+                if st.button("✕", key=f"unit_rm_{_units_key}_{_ui}", use_container_width=True):
+                    _to_remove = _ui
+    if _to_remove is not None:
+        st.session_state[_units_key].pop(_to_remove)
+        st.rerun()
+    for _err in _unit_errors:
+        st.caption(f"⚠ {_err}")
+    if st.button("＋ Add another unit", key=f"unit_add_{_units_key}"):
+        st.session_state[_units_key].append("")
+        st.rerun()
+    unit_numbers = [u for u in st.session_state[_units_key] if u]
     cat_idx  = CATEGORIES.index(existing["category"]) if existing.get("category") in CATEGORIES else 2
     category = st.selectbox("Issue Category *", CATEGORIES, index=cat_idx)
     issue_description = st.text_area(
@@ -765,8 +814,9 @@ def wo_modal(day_str, edit_id=None):
     with ba1:
         label = "✅ Update WO" if is_edit else "✅ Save WO"
         if st.button(label, type="primary", use_container_width=True):
-            if not wo_number or not unit_number or not customer:
-                st.error("Please fill in WO Number, Unit Number, and Customer.")
+            _valid_units = [u for u in unit_numbers if u.isdigit() and 4 <= len(u) <= 5]
+            if not wo_number or not _valid_units or not customer:
+                st.error("Please fill in WO Number, at least one valid Unit Number (4–5 digits), and Customer.")
             elif engineer == "— Select *":
                 st.error("Please select an engineer.")
             else:
@@ -774,7 +824,7 @@ def wo_modal(day_str, edit_id=None):
                     "id":                  existing.get("id", str(int(datetime.now().timestamp() * 1000))),
                     "created_at":          existing.get("created_at", ts_now),
                     "wo_number":           wo_number,
-                    "unit_number":         unit_number,
+                    "unit_numbers":        _valid_units,
                     "customer":            customer,
                     "postcode":            postcode,
                     "site_contact":        site_contact,
