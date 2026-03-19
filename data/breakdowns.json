@@ -50,9 +50,14 @@
       "id": "1773913445097",
       "created_at": "19/03/2026 09:44",
       "wo_number": "01-000657",
-      "unit_number": "8261 & 8698",
+      "unit_numbers": [
+        "8261",
+        "8698"
+      ],
       "customer": "Think Hire",
       "postcode": "ST9 0DQ",
+      "site_contact": "Chris",
+      "contact_mobile": "07949987290",
       "category": "Plumbing",
       "issue_description": "Issues:-\nUnit - 8261 - the gents toilet has a leak when flushed (End cubicle) \nUnit - 8698 - office kettle needs to be replaced, it keeps tripping out.\n\n",
       "engineer": "Kensite Fitter",
