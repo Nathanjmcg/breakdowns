@@ -477,6 +477,15 @@ def chip_ts_html(wo):
     parts = []
     if wo.get("created_at"):
         parts.append(f"📝 Logged {wo['created_at']}")
+    if wo.get("eta_advised") and wo.get("eta_datetime"):
+        _created = parse_ts(wo.get("created_at"))
+        _eta_dt  = parse_ts(wo["eta_datetime"])
+        gap_str  = ""
+        if _created and _eta_dt:
+            _gap_h = (_eta_dt - _created).total_seconds() / 3600
+            if _gap_h >= 0:
+                gap_str = f" · ⏱ {fmt_hours(_gap_h)} from report"
+        parts.append(f"📅 ETA {wo['eta_datetime']}{gap_str}")
     if wo.get("engineer"):
         eng = wo["engineer"]
         if wo.get("engineer_notes"):
@@ -563,6 +572,13 @@ def day_view_dialog(day_str):
                     f'{wo.get("postcode","—")} &nbsp;·&nbsp; '
                     f'{wo.get("category","—")}'
                     f'</div>'
+                    + (
+                        f'<div style="font-size:11.5px;color:{K_GREY};'
+                        f'background:rgba(0,0,0,0.04);border-radius:4px;'
+                        f'padding:5px 8px;margin-bottom:6px;line-height:1.45;">'
+                        f'{wo["issue_description"]}</div>'
+                        if wo.get("issue_description") else ""
+                    ) +
                     f'{ts_block}'
                     f'{pills}{charge_badge}{t_pill}'
                     f'{progress_html}'
@@ -633,6 +649,12 @@ def wo_modal(day_str, edit_id=None):
         postcode    = st.text_input("Postcode",       value=existing.get("postcode", ""))
     cat_idx  = CATEGORIES.index(existing["category"]) if existing.get("category") in CATEGORIES else 2
     category = st.selectbox("Issue Category *", CATEGORIES, index=cat_idx)
+    issue_description = st.text_area(
+        "Issue Description",
+        value=existing.get("issue_description", ""),
+        placeholder="Describe the fault or issue reported by the customer…",
+        height=90,
+    )
     st.markdown('</div>', unsafe_allow_html=True)
 
     # ── Engineer ──
@@ -653,6 +675,37 @@ def wo_modal(day_str, edit_id=None):
     st.markdown('<div class="ks-form-section"><h4>Progress Checklist</h4>', unsafe_allow_html=True)
     logged_responded = st.checkbox("Logged / Responded", value=existing.get("logged_responded", False))
     eta_advised      = st.checkbox("ETA Advised",         value=existing.get("eta_advised", False))
+
+    eta_datetime = existing.get("eta_datetime", "")
+    if eta_advised:
+        ec1, ec2 = st.columns([1, 1])
+        with ec1:
+            _existing_dt = parse_ts(eta_datetime) if eta_datetime else None
+            eta_date_val = _existing_dt.date() if _existing_dt else date.today()
+            eta_date = st.date_input("ETA Date", value=eta_date_val, key="eta_date_pick")
+        with ec2:
+            _existing_time = _existing_dt.strftime("%H:%M") if _existing_dt else "08:00"
+            eta_time_str = st.text_input("ETA Time (HH:MM)", value=_existing_time, key="eta_time_pick", placeholder="e.g. 14:30")
+        try:
+            _h, _m = [int(x) for x in eta_time_str.split(":")]
+            eta_datetime = datetime.combine(eta_date, datetime.min.time().replace(hour=_h, minute=_m)).strftime(TIMESTAMP_FMT)
+        except Exception:
+            eta_datetime = ""
+        _created = parse_ts(existing.get("created_at", ts_now))
+        _eta_dt  = parse_ts(eta_datetime)
+        if _created and _eta_dt:
+            _gap_h = (_eta_dt - _created).total_seconds() / 3600
+            if _gap_h >= 0:
+                _gap_label = fmt_hours(_gap_h)
+                _pill_col  = "#1a3a8c" if _gap_h <= 4 else ("#7a5c00" if _gap_h <= 24 else "#7b1a1a")
+                _pill_bg   = "#e8f0fe" if _gap_h <= 4 else ("#fff8e1" if _gap_h <= 24 else "#fdecea")
+                st.markdown(
+                    f"<span style='display:inline-block;background:{_pill_bg};color:{_pill_col};"
+                    f"border-radius:10px;padding:3px 10px;font-size:0.72rem;font-weight:700;"
+                    f"margin-top:2px;'>⏱ {_gap_label} from report to ETA</span>",
+                    unsafe_allow_html=True
+                )
+
     wo_allocated     = st.checkbox("WO Allocated",        value=existing.get("wo_allocated", False))
     attended         = st.checkbox("Attended",            value=existing.get("attended", False))
 
@@ -717,10 +770,12 @@ def wo_modal(day_str, edit_id=None):
                     "customer":            customer,
                     "postcode":            postcode,
                     "category":            category,
+                    "issue_description":   issue_description,
                     "engineer":            engineer,
                     "engineer_notes":      eng_notes,
                     "logged_responded":    logged_responded,
                     "eta_advised":         eta_advised,
+                    "eta_datetime":        eta_datetime,
                     "wo_allocated":        wo_allocated,
                     "attended":            attended,
                     "chargeable":          chargeable,
