@@ -377,13 +377,77 @@ def parse_ts(ts_str):
     except Exception:
         return None
 
+# ── Bank holidays (England) — cached 24h, same as Prep Schedule ──────────────
+@st.cache_data(ttl=86400)
+def get_bank_holidays():
+    try:
+        r = requests.get("https://www.gov.uk/bank-holidays.json", timeout=5)
+        r.raise_for_status()
+        events = r.json().get("england-and-wales", {}).get("events", [])
+        return {e["date"] for e in events}
+    except Exception:
+        # Fallback: key 2024-2026 England dates
+        return {
+            "2024-12-25","2024-12-26",
+            "2025-01-01","2025-04-18","2025-04-21","2025-05-05",
+            "2025-05-26","2025-08-25","2025-12-25","2025-12-26",
+            "2026-01-01","2026-04-03","2026-04-06","2026-05-04",
+            "2026-05-25","2026-08-31","2026-12-25","2026-12-28",
+        }
+
+WORK_START = 8   # 08:00
+WORK_END   = 17  # 17:00
+
+def working_hours_between(dt_start, dt_end):
+    """
+    Return the number of working hours between two datetimes,
+    counting only Mon–Fri 08:00–17:00, excluding bank holidays.
+    Returns a float.
+    """
+    if dt_end <= dt_start:
+        return 0.0
+    bank_hols = get_bank_holidays()
+    total_h   = 0.0
+    cursor    = dt_start
+
+    while cursor < dt_end:
+        # Skip weekends and bank holidays
+        if cursor.weekday() >= 5 or cursor.date().isoformat() in bank_hols:
+            cursor = datetime.combine(cursor.date() + timedelta(days=1),
+                                      datetime.min.time().replace(hour=WORK_START))
+            continue
+
+        day_start = cursor.replace(hour=WORK_START, minute=0, second=0, microsecond=0)
+        day_end   = cursor.replace(hour=WORK_END,   minute=0, second=0, microsecond=0)
+
+        # Window for this day
+        effective_start = max(cursor,  day_start)
+        effective_end   = min(dt_end,  day_end)
+
+        if effective_end > effective_start:
+            total_h += (effective_end - effective_start).total_seconds() / 3600
+
+        # Advance to start of next working day
+        cursor = datetime.combine(cursor.date() + timedelta(days=1),
+                                  datetime.min.time().replace(hour=WORK_START))
+
+    return total_h
+
+
 def hours_to_completion(wo):
-    """Return float hours between created_at and completed_at, or None."""
+    """Return working hours between created_at and completed_at, or None."""
     created   = parse_ts(wo.get("created_at"))
     completed = parse_ts(wo.get("completed_at"))
     if created and completed and completed > created:
-        return (completed - created).total_seconds() / 3600
+        return working_hours_between(created, completed)
     return None
+
+def elapsed_working_hours(wo):
+    """Working hours from created_at to now (for open WOs)."""
+    created = parse_ts(wo.get("created_at"))
+    if not created:
+        return None
+    return working_hours_between(created, datetime.now())
 
 def fmt_hours(h):
     if h is None:
@@ -426,20 +490,19 @@ def repeat_visit_tracker():
     return units, postcodes, customers
 
 def wos_over_48h():
-    """Return list of (day_str, wo) for incomplete WOs created >48h ago, and completed ones that took >48h."""
+    """Return list of (day_str, wo, working_h, status) where working hours exceed 48."""
     over = []
-    now  = datetime.now()
     for day_str, wos in st.session_state.data.items():
         for wo in wos:
-            created = parse_ts(wo.get("created_at"))
-            if not created:
+            if not wo.get("created_at"):
                 continue
             h = hours_to_completion(wo)
             if h is not None and h > 48:
                 over.append((day_str, wo, h, "completed"))
-            elif not wo.get("complete") and (now - created).total_seconds() / 3600 > 48:
-                elapsed = (now - created).total_seconds() / 3600
-                over.append((day_str, wo, elapsed, "open"))
+            elif not wo.get("complete"):
+                elapsed = elapsed_working_hours(wo)
+                if elapsed is not None and elapsed > 48:
+                    over.append((day_str, wo, elapsed, "open"))
     return sorted(over, key=lambda x: -x[2])
 
 def week_summary_bar(year, month, week_days):
@@ -500,20 +563,19 @@ def chip_ts_html(wo):
         parts.append(f"🔧 {eng}")
     if wo.get("completed_at"):
         h = hours_to_completion(wo)
-        parts.append(f"✅ Completed {wo['completed_at']}" + (f" · {fmt_hours(h)}" if h else ""))
+        parts.append(f"✅ Completed {wo['completed_at']}" + (f" · {fmt_hours(h)} working" if h else ""))
     return "<br>".join(parts) if parts else ""
 
 def time_pill_html(wo):
-    h = hours_to_completion(wo)
-    if wo.get("complete") and h is not None:
-        cls = "ks-pill-overdue" if h > 48 else "ks-pill-time"
-        return f'<span class="{cls}">⏱ {fmt_hours(h)}</span>'
-    elif not wo.get("complete"):
-        created = parse_ts(wo.get("created_at"))
-        if created:
-            elapsed = (datetime.now() - created).total_seconds() / 3600
-            if elapsed > 48:
-                return f'<span class="ks-pill-overdue">⚠ Open {fmt_hours(elapsed)}</span>'
+    if wo.get("complete"):
+        h = hours_to_completion(wo)
+        if h is not None:
+            cls = "ks-pill-overdue" if h > 48 else "ks-pill-time"
+            return f'<span class="{cls}">⏱ {fmt_hours(h)} working</span>'
+    else:
+        elapsed = elapsed_working_hours(wo)
+        if elapsed is not None and elapsed > 48:
+            return f'<span class="ks-pill-overdue">⚠ Open {fmt_hours(elapsed)} working</span>'
     return ""
 
 # ══════════════════════════════════════════════════════════════════════════════
