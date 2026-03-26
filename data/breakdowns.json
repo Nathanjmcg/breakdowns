@@ -140,9 +140,9 @@
       "charges_processed": false,
       "invoiced": false,
       "amount_invoiced": "",
-      "job_sheet_submitted": false,
-      "complete": false,
-      "completed_at": ""
+      "job_sheet_submitted": true,
+      "complete": true,
+      "completed_at": "26/03/2026 09:59"
     },
     {
       "id": "1774022374314",
