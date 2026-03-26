@@ -169,8 +169,8 @@
       "invoiced": false,
       "amount_invoiced": "",
       "job_sheet_submitted": true,
-      "complete": false,
-      "completed_at": ""
+      "complete": true,
+      "completed_at": "26/03/2026 10:12"
     }
   ],
   "2026-03-23": [
