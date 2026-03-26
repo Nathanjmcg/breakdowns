@@ -162,13 +162,13 @@
       "logged_responded": true,
       "eta_advised": true,
       "eta_datetime": "23/03/2026 08:00",
-      "wo_allocated": false,
-      "attended": false,
+      "wo_allocated": true,
+      "attended": true,
       "chargeable": false,
       "charges_processed": false,
       "invoiced": false,
       "amount_invoiced": "",
-      "job_sheet_submitted": false,
+      "job_sheet_submitted": true,
       "complete": false,
       "completed_at": ""
     }
