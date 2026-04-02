@@ -658,34 +658,5 @@
       "completed_at": ""
     }
   ],
-  "2026-03-27": [
-    {
-      "id": "1774604493735",
-      "created_at": "27/03/2026 09:41",
-      "wo_number": "01-000687",
-      "unit_numbers": [
-        "7974"
-      ],
-      "customer": "PAS (NW) Ltd",
-      "postcode": "WA2 9UF",
-      "site_contact": "N/K",
-      "contact_mobile": "",
-      "category": "Plumbing",
-      "issue_description": "issue - all 3 toilets aren't flushing in this unit.\nCustomer requested that we attend urgently",
-      "engineer": "Kensite Fitter",
-      "engineer_notes": "",
-      "logged_responded": true,
-      "eta_advised": false,
-      "eta_datetime": "",
-      "wo_allocated": false,
-      "attended": false,
-      "chargeable": false,
-      "charges_processed": false,
-      "invoiced": false,
-      "amount_invoiced": "",
-      "job_sheet_submitted": false,
-      "complete": false,
-      "completed_at": ""
-    }
-  ]
+  "2026-03-27": []
 }
