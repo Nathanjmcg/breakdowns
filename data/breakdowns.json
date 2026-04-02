@@ -175,34 +175,6 @@
   ],
   "2026-03-23": [
     {
-      "id": "1774257575260",
-      "created_at": "23/03/2026 09:19",
-      "wo_number": "01-000663",
-      "unit_numbers": [
-        "8588"
-      ],
-      "customer": "Think Hire Ltd",
-      "postcode": "DE13 7DL",
-      "site_contact": "Adam Pagel",
-      "contact_mobile": "07341462679",
-      "category": "Plumbing",
-      "issue_description": "Issue: Site have had a water fill on Friday and have come in this morning to most of the water draining out. End cubicle is constantly running, can the rest of the cabins be checked for leaks? Taps & Toilets. Site have isolated this for now but unsure if there are more leaks. \nCustomer has requested that we attend ASAP.\n",
-      "engineer": "Kensite Fitter",
-      "engineer_notes": "",
-      "logged_responded": true,
-      "eta_advised": true,
-      "eta_datetime": "23/03/2026 13:00",
-      "wo_allocated": true,
-      "attended": true,
-      "chargeable": false,
-      "charges_processed": false,
-      "invoiced": false,
-      "amount_invoiced": "",
-      "job_sheet_submitted": false,
-      "complete": false,
-      "completed_at": ""
-    },
-    {
       "id": "1774260833827",
       "created_at": "23/03/2026 10:13",
       "wo_number": "01-000664",
