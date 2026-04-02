@@ -660,34 +660,6 @@
   ],
   "2026-03-27": [
     {
-      "id": "1774603533555",
-      "created_at": "27/03/2026 09:25",
-      "wo_number": "01-000686",
-      "unit_numbers": [
-        "0000"
-      ],
-      "customer": "Greenmount Projects Ltd",
-      "postcode": "PR8 4EX",
-      "site_contact": "Sam",
-      "contact_mobile": "07908199978 ",
-      "category": "General",
-      "issue_description": "Issue - the below as the lock isn\u2019t working and he cant lock the unit. \nNo unit number logged on system as yet - delivered 26.03.2026.",
-      "engineer": "Kensite Fitter",
-      "engineer_notes": "",
-      "logged_responded": true,
-      "eta_advised": false,
-      "eta_datetime": "",
-      "wo_allocated": false,
-      "attended": false,
-      "chargeable": false,
-      "charges_processed": false,
-      "invoiced": false,
-      "amount_invoiced": "",
-      "job_sheet_submitted": false,
-      "complete": false,
-      "completed_at": ""
-    },
-    {
       "id": "1774604493735",
       "created_at": "27/03/2026 09:41",
       "wo_number": "01-000687",
