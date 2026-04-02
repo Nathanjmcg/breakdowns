@@ -175,34 +175,6 @@
   ],
   "2026-03-23": [
     {
-      "id": "1774264259158",
-      "created_at": "23/03/2026 11:10",
-      "wo_number": "01-000665",
-      "unit_numbers": [
-        "7560"
-      ],
-      "customer": "Manchester and Cheshire construction Company Ltd",
-      "postcode": "SK12 1NW",
-      "site_contact": "",
-      "contact_mobile": "",
-      "category": "General",
-      "issue_description": "Issue - Please arrange technician to attend SK12 1NW tomorrow to fit in shelving on the 20ft store delivered today as only half shelved store was delivered. \nCould we also ensure that padlock is delivered as customer advised padlock was missing on delivery. \nNo unit number allocated as status is booking not live\n",
-      "engineer": "Kensite Fitter",
-      "engineer_notes": "",
-      "logged_responded": true,
-      "eta_advised": false,
-      "eta_datetime": "",
-      "wo_allocated": true,
-      "attended": true,
-      "chargeable": false,
-      "charges_processed": false,
-      "invoiced": false,
-      "amount_invoiced": "",
-      "job_sheet_submitted": true,
-      "complete": true,
-      "completed_at": "26/03/2026 10:24"
-    },
-    {
       "id": "1774264806617",
       "created_at": "23/03/2026 11:20",
       "wo_number": "01-000666",
