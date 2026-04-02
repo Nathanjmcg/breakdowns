@@ -315,36 +315,7 @@
       "completed_at": "26/03/2026 10:27"
     }
   ],
-  "2026-03-24": [
-    {
-      "id": "1774370179335",
-      "created_at": "24/03/2026 16:36",
-      "wo_number": "01-000675",
-      "unit_numbers": [
-        "8316"
-      ],
-      "customer": "A Connolly Ltd",
-      "postcode": "M8 9DG",
-      "site_contact": "Lauren",
-      "contact_mobile": "07432467605",
-      "category": "General",
-      "issue_description": "The lock has broken in unit 8316 and it can\u2019t be locked \nThe customer has said this area isn\u2019t great so needs sorting ASAP",
-      "engineer": "Kensite Fitter",
-      "engineer_notes": "",
-      "logged_responded": true,
-      "eta_advised": false,
-      "eta_datetime": "",
-      "wo_allocated": false,
-      "attended": false,
-      "chargeable": false,
-      "charges_processed": false,
-      "invoiced": false,
-      "amount_invoiced": "",
-      "job_sheet_submitted": false,
-      "complete": false,
-      "completed_at": ""
-    }
-  ],
+  "2026-03-24": [],
   "2026-03-25": [],
   "2026-03-26": [],
   "2026-03-27": []
